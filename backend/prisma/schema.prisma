@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  STUDENT
+  ADMIN
+}
+
+enum ComplaintStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ASSIGNED
+  IN_PROGRESS
+  AWAITING_INFORMATION
+  RESOLVED
+  REOPENED
+  CLOSED
+}
+
+model Student {
+  id             String          @id @default(cuid())
+  studentId      String          @unique
+  name           String
+  password       String
+  course         String
+  semester       Int
+  section        String
+  role           UserRole        @default(STUDENT)
+  complaints     Complaint[]
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  busAssignments BusAssignment[]
+  hostelRequests HostelRequest[]
+  reportedItems  LostFoundItem[]
+  busComplaints  BusComplaint[]
+}
+
+model Complaint {
+  id             String          @id @default(cuid())
+  ticketId       String          @unique @default(cuid())
+  title          String
+  description    String
+  category       String
+  priority       String          @default("Medium")
+  status         ComplaintStatus @default(SUBMITTED)
+  isConfidential Boolean         @default(false)
+  assignedTo     String?
+  resolutionNote String?
+  studentId      String
+  student        Student         @relation(fields: [studentId], references: [id])
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+}
+
+model BusRoute {
+  id          String          @id @default(cuid())
+  name        String
+  routeCode   String          @unique
+  active      Boolean         @default(true)
+  stops       BusStop[]
+  schedules   BusSchedule[]
+  assignments BusAssignment[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model BusStop {
+  id       String   @id @default(cuid())
+  name     String
+  sequence Int
+  routeId  String
+  route    BusRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@unique([routeId, sequence])
+}
+
+model BusSchedule {
+  id        String   @id @default(cuid())
+  departure String
+  arrival   String
+  days      String
+  routeId   String
+  route     BusRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+}
+
+model BusAssignment {
+  id        String   @id @default(cuid())
+  studentId String
+  routeId   String
+  createdAt DateTime @default(now())
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  route     BusRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, routeId])
+}
+
+model Hostel {
+  id        String          @id @default(cuid())
+  name      String
+  address   String
+  rooms     HostelRoom[]
+  requests  HostelRequest[]
+  createdAt DateTime        @default(now())
+}
+
+model HostelRoom {
+  id         String @id @default(cuid())
+  roomNumber String
+  capacity   Int
+  occupied   Int    @default(0)
+  hostelId   String
+  hostel     Hostel @relation(fields: [hostelId], references: [id], onDelete: Cascade)
+
+  @@unique([hostelId, roomNumber])
+}
+
+model HostelRequest {
+  id          String   @id @default(cuid())
+  studentId   String
+  hostelId    String
+  type        String
+  description String
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  hostel      Hostel   @relation(fields: [hostelId], references: [id], onDelete: Cascade)
+}
+
+model LostFoundItem {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  category    String
+  location    String
+  status      String   @default("OPEN")
+  imageUrl    String?
+  reporterId  String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  reporter    Student  @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  course    String
+  semester  Int
+  credits   Int
+  faculty   String?
+  createdAt DateTime @default(now())
+}
+
+model BusComplaint {
+  id             String   @id @default(cuid())
+  ticketId       String   @unique
+  studentId      String
+  student        Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  route          String   @default("Campus to Haldwani")
+  category       String
+  scheduledTime  String
+  actualTime     String?
+  pickupLocation String
+  incidentDate   DateTime
+  description    String
+  evidenceUrl    String?
+  status         String   @default("Pending")
+  adminRemarks   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

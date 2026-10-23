@@ -1,0 +1,40 @@
+{
+  "id": "/",
+  "name": "A+ Plane — Smart Campus Portal",
+  "short_name": "A+ Plane",
+  "description": "Smart Campus Services and Student Grievance Management Portal",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#1d4ed8",
+  "scope": "/",
+  "lang": "en-US",
+  "categories": ["education", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-192x192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e40af" />
+      <stop offset="50%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="42" fill="url(#grad)" />
+  <circle cx="96" cy="96" r="74" fill="none" stroke="#ffffff" stroke-width="4" stroke-opacity="0.25" stroke-dasharray="8 6" />
+  <path d="M96 38 L142 120 L96 102 L50 120 Z" fill="#ffffff" />
+  <circle cx="96" cy="138" r="8" fill="#10b981" />
+  <text x="96" y="172" font-family="system-ui, -apple-system, sans-serif" font-size="22" font-weight="900" fill="#ffffff" text-anchor="middle" letter-spacing="1">A+ PLANE</text>
+</svg>
