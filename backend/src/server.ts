@@ -16,24 +16,47 @@ import safetyRoutes from "./routes/safety.routes";
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
+import path from "path";
+import fs from "fs";
+
 // Security Middleware
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
 // CORS Configuration
-const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:5173",
+const envOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((o) => o.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+const defaultOrigins = [
+  "http://localhost:5173",
   "http://localhost:3000",
   "http://localhost:5174",
+  "http://127.0.0.1:5173",
 ];
+
+const allowedOrigins = Array.from(new Set([...envOrigins, ...defaultOrigins]));
 
 app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, or Postman)
-      if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== "production") {
+      if (
+        !origin ||
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app") ||
+        origin.endsWith(".netlify.app") ||
+        origin.endsWith(".onrender.com") ||
+        process.env.NODE_ENV !== "production"
+      ) {
         return callback(null, true);
       }
-      return callback(new Error("CORS policy violation"));
+      return callback(new Error(`CORS policy violation for origin: ${origin}`));
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
@@ -92,6 +115,25 @@ app.use("/api/student", studentRoutes);
 app.use("/api/ai", aiRoutes);
 app.use("/api", modulesRoutes);
 app.use("/api/safety", safetyRoutes);
+
+// Full-stack static asset serving & SPA routing if frontend build is present
+const clientBuildPaths = [
+  path.resolve(__dirname, "../../frontend/dist"),
+  path.resolve(__dirname, "../public"),
+  path.resolve(__dirname, "public"),
+];
+
+const foundClientPath = clientBuildPaths.find((p) => fs.existsSync(path.join(p, "index.html")));
+
+if (foundClientPath) {
+  app.use(express.static(foundClientPath));
+  app.get("*", (req: Request, res: Response, next: NextFunction) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
+    res.sendFile(path.join(foundClientPath, "index.html"));
+  });
+}
 
 // 404 Handler for undefined API routes
 app.use((_req: Request, res: Response) => {

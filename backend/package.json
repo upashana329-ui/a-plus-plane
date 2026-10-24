@@ -10,7 +10,7 @@
     "start": "node dist/server.js",
     "seed": "tsx src/seed.ts",
     "test": "tsx --test src/__tests__/auth_and_roles.test.ts src/__tests__/bus_transit.test.ts",
-    "postinstall": "prisma skills sync || exit 0"
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
