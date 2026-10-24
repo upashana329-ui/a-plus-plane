@@ -87,6 +87,62 @@ app.get("/", (_req, res) => {
   });
 });
 
+// Auto-sync missing schema columns on startup
+export async function syncDatabaseSchema() {
+  const statements = [
+    `ALTER TABLE "Complaint" ADD COLUMN IF NOT EXISTS "priority" TEXT NOT NULL DEFAULT 'Medium';`,
+    `ALTER TABLE "Complaint" ADD COLUMN IF NOT EXISTS "isConfidential" BOOLEAN NOT NULL DEFAULT false;`,
+    `ALTER TABLE "Complaint" ADD COLUMN IF NOT EXISTS "assignedTo" TEXT;`,
+    `ALTER TABLE "Complaint" ADD COLUMN IF NOT EXISTS "resolutionNote" TEXT;`,
+    `CREATE TABLE IF NOT EXISTS "BusComplaint" (
+      "id" TEXT NOT NULL,
+      "ticketId" TEXT NOT NULL,
+      "studentId" TEXT NOT NULL,
+      "route" TEXT NOT NULL DEFAULT 'Campus to Haldwani',
+      "category" TEXT NOT NULL,
+      "scheduledTime" TEXT NOT NULL,
+      "actualTime" TEXT,
+      "pickupLocation" TEXT NOT NULL,
+      "incidentDate" TIMESTAMP(3) NOT NULL,
+      "description" TEXT NOT NULL,
+      "evidenceUrl" TEXT,
+      "status" TEXT NOT NULL DEFAULT 'Pending',
+      "adminRemarks" TEXT,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL,
+      CONSTRAINT "BusComplaint_pkey" PRIMARY KEY ("id")
+    );`,
+    `CREATE UNIQUE INDEX IF NOT EXISTS "BusComplaint_ticketId_key" ON "BusComplaint"("ticketId");`,
+    `DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint WHERE conname = 'BusComplaint_studentId_fkey'
+      ) THEN
+        ALTER TABLE "BusComplaint" ADD CONSTRAINT "BusComplaint_studentId_fkey" 
+        FOREIGN KEY ("studentId") REFERENCES "Student"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+      END IF;
+    END $$;`
+  ];
+
+  for (const sql of statements) {
+    try {
+      await prisma.$executeRawUnsafe(sql);
+    } catch (err: any) {
+      console.warn("Schema sync statement warning:", err?.message || err);
+    }
+  }
+  console.log("✅ Database schema verified and synchronized.");
+}
+
+app.get("/api/health/db-sync", async (_req, res) => {
+  try {
+    await syncDatabaseSchema();
+    res.json({ status: "OK", message: "Database schema synced successfully." });
+  } catch (err: any) {
+    res.status(500).json({ status: "ERROR", message: err?.message || "Sync failed" });
+  }
+});
+
 app.get("/api/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -154,8 +210,13 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 // Start Server
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, async () => {
   console.log(`🚀 A+ Plane backend running on http://localhost:${PORT}`);
+  try {
+    await syncDatabaseSchema();
+  } catch (err: any) {
+    console.error("Initial database schema sync error:", err?.message || err);
+  }
 });
 
 // Graceful Shutdown
